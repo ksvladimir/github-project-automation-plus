@@ -6,7 +6,7 @@
  * @param {string} columnName - The user inputted column name
  * @param {string} contentId - The id of the issue or pull request
  */
-const generateMutationQuery = (data, projectName, columnName, contentId) => {
+const generateMutationQuery = (data, projectName, columnName, contentId, action) => {
 	// All the projects found in organisation and repositories
 	const repoProjects = data.repository.projects.nodes || [];
 	const orgProjects = (data.repository.owner &&
@@ -49,19 +49,33 @@ const generateMutationQuery = (data, projectName, columnName, contentId) => {
 	});
 
 	// If the card already exists in the project move it otherwise add a new card
-	const mutations = Object.keys(cardLocations).map(mutation => cardLocations[mutation].cardId ?
-		`mutation {
-			moveProjectCard( input: {
-				cardId: "${cardLocations[mutation].cardId}",
-				columnId: "${cardLocations[mutation].columnId}"
-		}) { clientMutationId } }` :
+	let mutations;
+	if (action === 'update') {
+		mutations = Object.keys(cardLocations).map(mutation => cardLocations[mutation].cardId ?
+			`mutation {
+				moveProjectCard( input: {
+					cardId: "${cardLocations[mutation].cardId}",
+					columnId: "${cardLocations[mutation].columnId}"
+			}) { clientMutationId } }` :
 
-		`mutation {
-			addProjectCard( input: {
-				contentId: "${contentId}",
-				projectColumnId: "${cardLocations[mutation].columnId}"
-		}) { clientMutationId } }`
-	);
+			`mutation {
+				addProjectCard( input: {
+					contentId: "${contentId}",
+					projectColumnId: "${cardLocations[mutation].columnId}"
+			}) { clientMutationId } }`
+		);
+
+	} else if (action === 'add') {
+		mutations = Object.keys(cardLocations).filter(mutation => !cardLocations[mutation].cardId).map(mutation =>
+			`mutation {
+				addProjectCard( input: {
+					contentId: "${contentId}",
+					projectColumnId: "${cardLocations[mutation].columnId}"
+			}) { clientMutationId } }`
+		);
+	} else {
+		throw new Error(`Unknown action: ${action}`);
+	}
 
 	return mutations;
 };
