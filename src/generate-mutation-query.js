@@ -46,36 +46,33 @@ const generateMutationQuery = (data, projectName, columnName, contentId, action)
 
 	currentLocation.forEach(card => {
 		cardLocations[card.project.id].cardId = card.id;
+		cardLocations[card.project.id].oldColumnId = card.column.id;
 	});
 
 	// If the card already exists in the project move it otherwise add a new card
 	let mutations;
-	if (action === 'update') {
-		mutations = Object.keys(cardLocations).map(mutation => cardLocations[mutation].cardId ?
-			`mutation {
-				moveProjectCard( input: {
-					cardId: "${cardLocations[mutation].cardId}",
-					columnId: "${cardLocations[mutation].columnId}"
-			}) { clientMutationId } }` :
-
-			`mutation {
-				addProjectCard( input: {
-					contentId: "${contentId}",
-					projectColumnId: "${cardLocations[mutation].columnId}"
-			}) { clientMutationId } }`
-		);
-
-	} else if (action === 'add') {
-		mutations = Object.keys(cardLocations).filter(mutation => !cardLocations[mutation].cardId).map(mutation =>
-			`mutation {
-				addProjectCard( input: {
-					contentId: "${contentId}",
-					projectColumnId: "${cardLocations[mutation].columnId}"
-			}) { clientMutationId } }`
-		);
-	} else {
-		throw new Error(`Unknown action: ${action}`);
-	}
+	Object.keys(cardLocations).forEach(mutation => {
+		if (cardLocations[mutation].cardId) {
+			if (action === 'update' &&
+				cardLocations[mutation].oldColumnId !== cardLocations[mutation].columnId) {
+				mutations.push(
+					`mutation {
+						moveProjectCard( input: {
+							cardId: "${cardLocations[mutation].cardId}",
+							columnId: "${cardLocations[mutation].columnId}"
+					}) { clientMutationId } }`
+				);
+			}
+		} else { // card doesn't exist
+			mutations.push(
+				`mutation {
+					addProjectCard( input: {
+						contentId: "${contentId}",
+						projectColumnId: "${cardLocations[mutation].columnId}"
+				}) { clientMutationId } }`
+			);
+		}
+	});
 
 	return mutations;
 };

@@ -12,6 +12,10 @@ const generateMutationQuery = require('./generate-mutation-query');
 		const column = core.getInput('column');
 		const action = core.getInput('action') || 'update';
 
+		if (!['add', 'update'].includes(action)) {
+			throw new Error(`Unknown action: ${action}`);
+		}
+
 		// Get data from the current action
 		const {eventName, nodeId, url} = getActionData(github.context);
 

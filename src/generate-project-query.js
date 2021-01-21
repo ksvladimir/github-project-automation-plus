@@ -16,6 +16,10 @@ const projectQuery = (url, eventName, project) => (
 							name
 							id
 						}
+						column {
+							name
+							id
+						}
 					}
 				}
 				repository {
